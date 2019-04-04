@@ -17,15 +17,24 @@ app.set('view engine','mustache')
 app.get('/blog',function(req,res){
 
   // get all the posts from the database using sequelize
-  models.Blog.findAll().then(function(blogs){
+  models.Blog.findAll({
+    include:[
+      {
+        model:models.Comment,
+        as: 'comments'
+      }
+    ]
   
+  })
+  .then((blogs)=>{
+    
     res.render('blog',{blogs:blogs})
   })
 
 })
 
 
-app.post("/addpost", (req,res)=>{
+app.post('/addpost', (req,res)=>{
   let title = req.body.title
   let body = req.body.body
 
@@ -34,7 +43,12 @@ app.post("/addpost", (req,res)=>{
     body:body
   })
   blog.save()
-res.redirect("/blog")
+  .then(()=>{
+    res.redirect('/blog')
+  })
+  
+
+
 })
 
 
@@ -49,7 +63,7 @@ app.get('/update-blog/:Id',(req,res)=>{
 
 })
 
-app.post("/update-blog", (req,res)=>{
+app.post('/update-blog', (req,res)=>{
   let id = parseInt(req.body.Id)
   let title= req.body.title
   let body = req.body.body
@@ -62,19 +76,19 @@ app.post("/update-blog", (req,res)=>{
       id : id
     }
   })
-  console.log("this is what im trying to send back")
+
   
   
  
   
-res.redirect("/blog")
+res.redirect('/blog')
 
 })
 
 
 app.post("/delete-post",(req,res)=>{
   let id = parseInt(req.body.Id)
-  console.log(id)
+  
   
   
   models.Blog.destroy({
@@ -88,70 +102,54 @@ res.redirect('/blog')
 
 
 })
-//building a post
-/*const post = models.blog.build({
-  title :"Hello CSS",
-  body: 'This is CSS course'
+
+app.post('/add-comment',(req,res)=>{
+  let title = req.body.commentTitle
+  let body = req.body.comment
+  let blogid = parseInt(req.body.Id)
+  
+  let comment= models.Comment.build({
+    title: title,
+    body:body,
+    blogid :blogid
+  })
+  comment.save()
+  .then(()=>{
+    res.redirect('/blog')
+  })
 })
 
-console.log("post before saving")
-console.log(post)
 
-*/
+app.get('/view-comments/:Id',(req,res)=>{
+  let blogid = parseInt(req.params.Id)
 
-// inserting the post in the database
-/*
-post.save().then(function(newPost){
-  console.log("newPost object")
-  console.log(newPost)
+  models.Blog.findByPk(blogid,{
+    include:[
+      {
+        model:models.Comment,
+        as: 'comments'
+      }
+    ]
+  
+  })
+  .then((blog)=>{
+    
+    res.render('view-comments',{blog:blog})
+  })
 })
-*/
 
+app.get('/delete-comment/:Id',(req,res)=>{
+  let id = parseInt(req.params.Id)
+  models.Comment.destroy({
+    where: {
+        id:id
+    }
+    
 
+})
+res.redirect('/blog')
+})
 
-// find the post in the database
-/*
-models.post.findOne().then(function(post){
-  console.log(post)
-}) */
-
-
-// find the post by id
-/*
-models.post.findById(2).then(function(post){
-  console.log(post)
-}) */
-
-// find all the posts
-/*
-models.post.findAll().then(function(posts){
-  console.log(posts)
-}) */
-
-// find the posts by username
-/*
-models.post.findAll({
-  where: {
-    username : 'johndoe'
-  }
-}).then(function(posts){
-  console.log(posts)
-}) */
-
-
-// updating the post
-
-/*
-models.Blog.update({
-  title : 'mary'
-},{
-  where: {
-    id : 1
-  }
-}).then(function(post){
-  console.log(post)
-}) 
-*/
 
 app.listen(3000,function(){
   console.log("node server has started")
